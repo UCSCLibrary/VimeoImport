@@ -13,7 +13,6 @@
  */
 class VimeoImport_IndexController extends Omeka_Controller_AbstractActionController
 {    
-
   /**
    * The default action to display the import from and process it.
    *
@@ -33,14 +32,14 @@ class VimeoImport_IndexController extends Omeka_Controller_AbstractActionControl
     $flashMessenger = $this->_helper->FlashMessenger;
 
     try{
-      if ($this->getRequest()->isPost()){
-	if($form->isValid($this->getRequest()->getPost()))
-	  $successMessage = Vimeo_Form_Import::ProcessPost();
-	else 
-	  $flashMessenger->addMessage('Invalid Vimeo video data! Check your form entries.','error');
-      } 
+        if ($this->getRequest()->isPost()){
+            if($form->isValid($this->getRequest()->getPost()))
+                $successMessage = Vimeo_Form_Import::ProcessPost();
+            else 
+                $flashMessenger->addMessage('Invalid Vimeo video data! Check your form entries.','error');
+            }
     } catch (Exception $e){
-      $flashMessenger->addMessage($e->getMessage(),'error');
+        $flashMessenger->addMessage($e->getMessage(),'error');
     }
 
     if(isset($successMessage))
@@ -48,6 +47,4 @@ class VimeoImport_IndexController extends Omeka_Controller_AbstractActionControl
     $this->view->form = $form;
 
   }
-
-
 }

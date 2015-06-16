@@ -26,12 +26,20 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
   /**
    * @var array Filters for the plugin.
    */
-    protected $_filters = array('admin_navigation_main','filterElement'=>array('Display','Item',"Item Type Metadata","Player"),'display_elements');
+    protected $_filters = array(
+        'admin_navigation_main',
+        'filterElement'=>array('Display','Item',"Item Type Metadata","Player"),
+        'display_elements'
+    );
 
   /**
    * @var array Options for the plugin.
    */
-    protected $_options = array('vimeo_width'=>640,'vimeo_height'=>360);
+    protected $_options = array(
+        'vimeo_width'=>640,
+        'vimeo_height'=>360,
+        'vimeo_token'=>'c69cf13bd30ed59a6057d6c54a1396b8'
+    );
 
     public function hookAfterSaveItem($args){
         if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player')) {          
@@ -162,13 +170,11 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
   }
 
   public function filterElement($text,$args) {
-      if(strpos($text,'iframe') > 0) {
-          $wpo = strpos($text,'width=')+7;
-          $text = substr_replace($text,get_option('vimeo_width'),$wpo,3);
-          $hpo = strpos($text,'height=')+8;
-          $text = substr_replace($text,get_option('vimeo_height'),$hpo,3);
-      }
+      set_option('vimeo_width',640);
+      set_option('vimeo_height',320);
+      if(strpos($text,'iframe') > 0)
+          $text = substr_replace($text,' width="'.get_option('vimeo_width').'" height="'.get_option('vimeo_height').'" ',7,1);
       return $text;
-  }
+  }      
     
 }

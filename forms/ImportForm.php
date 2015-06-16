@@ -39,8 +39,8 @@ class Vimeo_Form_Import extends Omeka_Form
 						    'label'         => __('Vimeo URL'),
 						    'description'   => __('Paste the full url of the Vimeo video you would like to import'),
 						    'validators'    =>array(
-									    array('callback',false,array('callback'=>array($this,'validateVimeoUrl'),'options'=>array()))
-									    ),
+                                array('callback',false,array('callback'=>array($this,'validateVimeoUrl'),'options'=>array()))
+                            ),
 						    'order'         => 1,
 						    'required'      => true
 						    )
@@ -112,20 +112,14 @@ class Vimeo_Form_Import extends Omeka_Form
      */
     public static function ProcessPost()
     {
-      //if we have a short url, expand it
       $_REQUEST['vimeourl'] = self::_resolveShortUrl($_REQUEST['vimeourl']);
-      
       try {
-
-	if(self::_importSingle())
-	  return('Your video was imported into Omeka successfully');
-
+          if(self::_importSingle())
+              return('Your video was imported into Omeka successfully');
       } catch(Exception $e) {
-	throw new Exception('Error importing video. '.$e->getMessage());
+          throw new Exception('Error importing video. '.$e->getMessage());
       }
-
       return(true);
-
     }
 
 
@@ -139,69 +133,40 @@ class Vimeo_Form_Import extends Omeka_Form
    */
   private static function _importSingle()
     {
-
       require_once dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR . 'import.php';
-      require_once dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'libraries' . DIRECTORY_SEPARATOR . 'Vimeo' . DIRECTORY_SEPARATOR . 'Vimeo.php';
-      /*
-      $client = new Google_Client();
-      $client->setApplicationName("Omeka_Vimeo_Import");
-      $client->setDeveloperKey(VimeoImport_ImportHelper::$vimeo_api_key);
-  	
+
+      $public = isset($_REQUEST['vimeopublic']) ? $_REQUEST['vimeopublic'] : false; 
+
       try{
-	$service = new Google_Service_Vimeo($client);
-      }catch(Exception $e) {
-	throw $e;
-      }
+          $videoID = VimeoImport_ImportHelper::ParseURL($_REQUEST['vimeourl']);
+          $response =  VimeoImport_ImportHelper::GetVideo(
+              $videoID,
+              $_REQUEST['vimeocollection'],
+              $_REQUEST['vimeouserrole'],
+              $_REQUEST['vimeopublic']
+          );
 
-      if(isset($_REQUEST['vimeourl']))
-	$url = $_REQUEST['vimeourl'];
-      else
-      throw new UnexpectedValueException('URL of Vimeo video was not set');
-
-
-      if(isset($_REQUEST['vimeocollection']))
-	$collection = $_REQUEST['vimeocollection'];
-      else
-	$collection = 0;
-
-      if(isset($_REQUEST['vimeouserrole']))
-	$ownerRole = $_REQUEST['vimeouserrole'];
-      else
-	$ownerRole = 0;
-
-      if(isset($_REQUEST['vimeopublic']))
-	$public = $_REQUEST['vimeopublic'];
-      else 
-	$public = false;
-      try{
-	$videoID = VimeoImport_ImportHelper::ParseURL($url);
-	$response =  VimeoImport_ImportHelper::GetVideo($videoID,$service,$collection,$ownerRole,$public);
-      
-	$post = $response['post'];
-	$files = $response['files'];
-
+          $post = $response['post'];
+          $files = $response['files'];
       } catch (Exception $e) {
-	throw $e;
+          throw $e;
       }
-      *///TODO
-      $post=array();
-    $record = new Item();
 
-    $record->setPostData($post);
+      $record = new Item();
+      
+      $record->setPostData($post);
    
-    if (!$record->save(false)) {
-      throw new Exception($record->getErrors());
-    }
-
-    if(!empty($files)&&!empty($record))
-      {
-	if(!insert_files_for_item($record,'Url',$files))
-	  throw new Exception("Error attaching files");
+      if (!$record->save(false)) {
+          throw new Exception($record->getErrors());
       }
-    
-    return(true);
-
-  }
+      
+      if(!empty($files)&&!empty($record))
+          {
+              if(!insert_files_for_item($record,'Url',$files))
+                  throw new Exception("Error attaching files");
+          }
+      return(true);
+    }
 
   /**
    * Get an array to be used in formSelect() containing possible user roles.
@@ -313,15 +278,8 @@ class Vimeo_Form_Import extends Omeka_Form
      *@return bool $valid Indicates whether this url points to a valid vimeo
      */
     public function validateVimeoUrl($url,$args){
-      if (!preg_match("/\b(?:(?:https?|ftp):\/\/|www\.)[-a-z0-9+&@#\/%?=~_|!:,.;]*[-a-z0-9+&@#\/%=~_|]/i", $url)) {
-	return false;
-      }
-      if(strpos($url,'//youtu.be'))
-	$url = $this->_resolveShortUrl($url);
-
       if(!strpos($url,'vimeo.com'))
-	return false;
-      
+          return false;
       return true;
     }
 

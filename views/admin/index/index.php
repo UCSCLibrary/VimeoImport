@@ -1,6 +1,6 @@
 <?php
 
-$head = array('bodyclass' => 'vimwo-import primary', 
+$head = array('bodyclass' => 'vimeo-import primary', 
               'title' => html_escape(__('Vimeo Import | Import Video')));
 echo head($head);
 ?>
