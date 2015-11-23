@@ -19,3 +19,14 @@
    <p class = "explanation">Enter the default height for display of videos imported from Vimeo</p>
     </div>
 </div>
+
+<div class="field">
+    <div id="vimeo-token-label" class="two columns alpha">
+        <label for="vimeo-token"><?php echo __('Vimeo API Token'); ?></label>
+    </div>
+    <div class="inputs five columns omega">
+   <?php echo get_view()->formText('vimeo_token', get_option('vimeo_token'), 
+        array()); ?>
+   <p class = "explanation">Enter the API token generated from your Vimeo Developer account application</p>
+    </div>
+</div>

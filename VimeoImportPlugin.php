@@ -20,7 +20,8 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
         'admin_head',
         'after_save_item',
         'config',
-        'config_form'
+        'config_form',
+        'upgrade'
     );
 
   /**
@@ -38,7 +39,7 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
     protected $_options = array(
         'vimeo_width'=>640,
         'vimeo_height'=>360,
-        'vimeo_token'=>'c69cf13bd30ed59a6057d6c54a1396b8'
+        'vimeo_token'=>''
     );
 
     public function hookAfterSaveItem($args){
@@ -85,6 +86,20 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
             return $elementSets;
     }
 
+    /**
+     * Upgrade the plugin.
+     */
+    public function hookUpgrade($args)
+    {
+        $oldVersion = $args['old_version'];
+        $newVersion = $args['new_version'];
+        $db = $this->_db;
+        if($oldVersion < 1.2){
+            $config = parse_ini_file(dirname(dirname(__FILE__))."/vimeo.ini");
+            set_option('vimeo_token',$config['api_token']);
+        }
+    }
+
   /**
    *When the plugin installs, create a new metadata element
    *called Player associated with Moving Pictures
@@ -92,6 +107,11 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
    *@return void
    */
   public function hookInstall(){
+      $this->_installOptions();
+
+      $config = parse_ini_file(dirname(__FILE__)."/vimeo.ini");
+      set_option('vimeo_token',$config['api_token']);
+
       if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player'))
           return;
 
@@ -132,6 +152,8 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
             set_option('vimeo_width',$_REQUEST['vimeo_width']);
         if(isset($_REQUEST['vimeo_height']))
             set_option('vimeo_height',$_REQUEST['vimeo_height']);
+        if(isset($_REQUEST['vimeo_token']))
+            set_option('vimeo_token',$_REQUEST['vimeo_token']);
     }
 
     public function hookConfigForm(){
