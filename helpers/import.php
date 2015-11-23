@@ -190,18 +190,22 @@ class VimeoImport_ImportHelper
             $returnFiles = array();
             if($pictures['total']>0)
                 foreach($pictures['data'] as $picture){
+                    $maxwidth=0;
+                    $i=0;
                     foreach($picture['sizes'] as $key => $pic)
-                        {
-                            if($pic['width']>$maxwidth)
-                                $i = $key;
-                        }
+                        if($pic['width']>$maxwidth)
+                            $i = $key;
                     $returnFiles[] = $picture['sizes'][$i]['link'];
                 }
             $captions = self::Fetch("videos/$itemID/texttracks");
+/*            
+//            Caption text files are not being recognized correctly
+//            by the importer, and are causing thumbnail import to
+//            fail.
             if($captions['total']>0)
                 foreach($captions['data'] as $caption)
                     $returnFiles[] = $caption['link'];
-
+*/
             return(array(
                 'post' => $returnPost,
                 'files' => $returnFiles
