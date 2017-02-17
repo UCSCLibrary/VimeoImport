@@ -42,28 +42,30 @@ class Vimeo_Form_Import extends Omeka_Form
                                 array('callback',false,array('callback'=>array($this,'validateVimeoUrl'),'options'=>array()))
                             ),
 						    'order'         => 1,
-						    'required'      => true
+						    'required'      => true,
+                                                    'title'         => 'Copy the URL from your browser’s URL bar or the YouTube “share” link'
 						    )
 			);
 
 	// Collection:
         $this->addElement('select', 'vimeocollection', array(
 							'label'         => __('Collection'),
-							'description'   => __('To which collection would you like to add the Vimeo video?'),
+							'description'   => __('Select a collection'),
 							'value'         => '0',
 							'order'         => 2,
 							'multiOptions'       => $this->_getCollectionOptions()
 							)
 			  );
 
-	// User Role:
+	// Responsibility (User Role):
         $this->addElement('select', 'vimeouserrole', array(
-								'label'         => __('User Role'),
-								'description'   => __('Which role does the Vimeo user/channel play in the creation of the new Omeka item?'),
+								'label'         => __('Responsibility'),
+								'description'   => __('The Vimeo user is the ______ of the video'),
 								'value'         => 'Publisher',
 								'order'         => 3,
 								
-								'multiOptions'       => $this->_getRoleOptions()
+								'multiOptions'       => $this->_getRoleOptions(),
+            'title' => 'This will determine the Dublin Core field in which the YouTube user/channel name will appear.'
 								)
 			  );
 
