@@ -13,38 +13,40 @@
  */
 class VimeoImport_IndexController extends Omeka_Controller_AbstractActionController
 {    
-  /**
-   * The default action to display the import from and process it.
-   *
-   * This action runs before loading the main import form. It 
-   * processes the form output if there is any, and populates
-   * some variables used by the form.
-   *
-   * @param void
-   * @return void
-   */
-  public function indexAction()
-  {
-    include_once(dirname(dirname(__FILE__))."/forms/ImportForm.php");
-    $form = new Vimeo_Form_Import();
+    /**
+     * The default action to display the import from and process it.
+     *
+     * This action runs before loading the main import form. It 
+     * processes the form output if there is any, and populates
+     * some variables used by the form.
+     *
+     * @param void
+     * @return void
+     */
+    public function indexAction()
+    {
+        include_once(dirname(dirname(__FILE__))."/forms/ImportForm.php");
+        $form = new Vimeo_Form_Import();
 
-    //initialize flash messenger for success or fail messages
-    $flashMessenger = $this->_helper->FlashMessenger;
+        //initialize flash messenger for success or fail messages
+        $flashMessenger = $this->_helper->FlashMessenger;
 
-    try{
-        if ($this->getRequest()->isPost()){
-            if($form->isValid($this->getRequest()->getPost()))
-                $successMessage = Vimeo_Form_Import::ProcessPost();
-            else 
-                $flashMessenger->addMessage('Invalid Vimeo video data! Check your form entries.','error');
+        try{
+            if ($this->getRequest()->isPost()){
+                if($form->isValid($this->getRequest()->getPost()))
+                    $successMessage = Vimeo_Form_Import::ProcessPost();
+                else 
+                    $flashMessenger->addMessage('Invalid Vimeo video data! Check your form entries.','error');
             }
-    } catch (Exception $e){
-        $flashMessenger->addMessage($e->getMessage(),'error');
+        } catch (Exception $e){
+            $flashMessenger->addMessage($e->getMessage(),'error');
+        }
+
+        if(isset($successMessage)){
+            $flashMessenger->addMessage($successMessage,'success');
+            
+        }
+        $this->view->form = $form;
+
     }
-
-    if(isset($successMessage))
-      $flashMessenger->addMessage($successMessage,'success');
-    $this->view->form = $form;
-
-  }
 }
