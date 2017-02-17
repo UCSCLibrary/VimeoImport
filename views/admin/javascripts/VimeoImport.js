@@ -9,6 +9,9 @@ jQuery(window).load(function() {
     dialogClass: "vimeo-success-dialog"
   });
 
+  //reset the url input (not sure why the form reset function isn't working)
+  jQuery('body.vimeo-import div#content form input#vimeourl').val("");
+
   textareaId = 'Elements-'+playerElementId+'-0-text';
   jQuery('#Elements-'+playerElementId+'-0-text_parent').hide();
   jQuery('#Elements-'+playerElementId+'-0-text').show();
