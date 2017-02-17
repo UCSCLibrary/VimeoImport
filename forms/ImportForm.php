@@ -75,7 +75,6 @@ class Vimeo_Form_Import extends Omeka_Form
         $this->addElement('checkbox', 'vimeopublic', array(
             'label'         => __('Public Visibility'),
             'description'   => __('Would you like to make the video public in Omeka?'),
-            'checked'         => 'checked',
 	    'order'         => 4
 	)
 	);
