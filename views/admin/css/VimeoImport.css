@@ -2,3 +2,14 @@ iframe {
     max-height: 275px;
     max-width: 400px;
 }
+
+
+ .vimeo-success-dialog {
+     font-size: 2em;
+     border: 2px solid green;
+ }
+ 
+ #vimeo-success-dialog{
+     padding: 0px;
+ }
+ 

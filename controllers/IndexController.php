@@ -44,7 +44,7 @@ class VimeoImport_IndexController extends Omeka_Controller_AbstractActionControl
 
         if(isset($successMessage)){
             $flashMessenger->addMessage($successMessage,'success');
-            
+            $this->view->successDialog = true;
         }
         $this->view->form = $form;
 
