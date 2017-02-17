@@ -43,7 +43,7 @@ class Vimeo_Form_Import extends Omeka_Form
             ),
 	    'order'         => 1,
 	    'required'      => true,
-            'title'         => 'Copy the URL from your browser’s URL bar or the YouTube “share” link'
+            'title'         => 'Copy the URL from your browser’s URL bar or the Vimeo "share" link'
 	)
 	);
 
@@ -65,7 +65,7 @@ class Vimeo_Form_Import extends Omeka_Form
 	    'order'         => 3,
 	    
 	    'multiOptions'       => $this->_getRoleOptions(),
-            'title' => 'This will determine the Dublin Core field in which the YouTube user/channel name will appear.'
+            'title' => 'This will determine the Dublin Core field in which the Vimeo username will appear.'
 	)
 	);
 

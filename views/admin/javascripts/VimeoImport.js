@@ -1,6 +1,6 @@
 jQuery(window).load(function() {
 
-  jQuery("body.vimeo-import").tooltip();
+  jQuery("body.vimeo-import form").tooltip();
 
   jQuery( "#vimeo-success-dialog" ).dialog({
     height: 0,
