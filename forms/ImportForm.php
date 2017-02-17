@@ -115,7 +115,7 @@ class Vimeo_Form_Import extends Omeka_Form
       $_REQUEST['vimeourl'] = self::_resolveShortUrl($_REQUEST['vimeourl']);
       try {
           if(self::_importSingle())
-              return('Your video was imported into Omeka successfully');
+	      return('Go to Items or Collections to view imported videos.');
       } catch(Exception $e) {
           throw new Exception('Error importing video. '.$e->getMessage());
       }
