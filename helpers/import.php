@@ -31,11 +31,20 @@ class VimeoImport_ImportHelper
         $path = parse_url($url,PHP_URL_PATH);
         return(str_replace('/','',$path));
     }
+
+    public static function CreatePlayerElement(){
+        static::_createElement('Player','html for embedded player to stream video content');
+    }
+
+    public static function CreateThumbnailElement(){
+        static::_createElement('Imported Thumbnail','If a thumbnail images was imported for an embedded video, its id is recorded here and the thumbnail is hidden on pages displaying the embedded video itself.');
+    }
     
-    private static function _addPlayerElement() {
-        if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player'))
+
+    private static function _createElement($name,$description) {
+        if(element_exists(ElementSet::ITEM_TYPE_NAME,$name))
             return;
-        
+
         $db = get_db();
         $table = $db->getTable('ItemType');
         $mpType = $table->findByName('Moving Image');
@@ -47,11 +56,9 @@ class VimeoImport_ImportHelper
         }
         $mpType->addElements(array(
             array(
-                'name'=>'Player',
-                'description'=>'html for embedded player to stream video content'
-            )
-        ));
-      $mpType->save();
+                'name'=>$name,
+                'description'=>$description)));
+        $mpType->save();
     }
 
     public static function Fetch($url){      
@@ -59,8 +66,8 @@ class VimeoImport_ImportHelper
         if(strpos($url,'http')===FALSE)
             if(strpos($url,'/')!==0)
                 $url = "https://api.vimeo.com/".$url;
-            else
-                $url = "https://api.vimeo.com".$url;
+        else
+            $url = "https://api.vimeo.com".$url;
         
         $authorization = "Authorization: Bearer ".get_option('vimeo_token');
 
@@ -78,8 +85,8 @@ class VimeoImport_ImportHelper
         foreach($licenses['data'] as $license) 
             if($license['code']==$code)
                 return $license['name'];
-            else
-                return "";
+        else
+            return "";
     }
 
     /**
@@ -99,117 +106,116 @@ class VimeoImport_ImportHelper
         $video = self::Fetch("videos/$itemID");
         $publisher = "Vimeo.com";    
 
-        if(!isset($video['license']) || !$video['license'] || $video['license']==="null") {
+        if(!isset($video['license']) || !$video['license'] || $video['license']==="null") 
             $license = self::GetVimeoLicense($video['license']);
-            
-            $maps = array(
-                "Dublin Core"=>array(
-                    "Title"=>array($video['name']),
-                    "Description"=>array($video['description']),
-                    "Date"=>array($video['created_time']),
-                    "Source"=>array($video['link']),
-                    "Rights"=>array($license)
-                )
-            );
+      
+        $maps = array(
+            "Dublin Core"=>array(
+                "Title"=>array($video['name']),
+                "Description"=>array($video['description']),
+                "Date"=>array($video['created_time']),
+                "Source"=>array($video['link']),
+                "Rights"=>array($license)
+            )
+        );
+        
+        $pictures = self::fetch("videos/$itemID/pictures");
+        $maxwidth=0;
+        $i=0;
+        $returnFiles = array();
+        if($pictures['total']>0)
+            foreach($pictures['data'] as $picture){
+                $maxwidth=0;
+                $i=0;
+                foreach($picture['sizes'] as $key => $pic)
+                    if($pic['width']>$maxwidth)
+                        $i = $key;
+                $returnFiles[] = $picture['sizes'][$i]['link'];
+                
+                $thumb = $picture['sizes'][$i]['link'];
+                $thumb = strpos($thumb,"?") ? substr($thumb,0,strpos($thumb,"?")) : $thumb;
+                $maps[ElementSet::ITEM_TYPE_NAME]["Imported Thumbnail"]=array($thumb);
+            }            
 
-            if(!empty($ownerRole))
-                $maps['Dublin Core'][$ownerRole]=array($video['user']['name'].' ('.$video['user']['link'].')');
-            
-            if (plugin_is_active('DublinCoreExtended'))
-                {
-                    $maps["Dublin Core"]["License"]=array($license);
-                    $maps["Dublin Core"]["Date Created"]=array($video['created_time']);
-                }
-
-            if(!element_exists(ElementSet::ITEM_TYPE_NAME,'Player'))
-                static::_addPlayerElement();
-
-            $maps[ElementSet::ITEM_TYPE_NAME]["Player"]=array($video['embed']['html']);
-            
-            if(element_exists(ElementSet::ITEM_TYPE_NAME,'Duration'))
-                $maps[ElementSet::ITEM_TYPE_NAME]["Duration"]=array($video['duration']);
-            
-            $Elements = array();
-            
-            $db = get_db();
-            $elementTable = $db->getTable('Element');
-            
-            foreach ($maps as $elementSet=>$elements)
-                {
-                    foreach($elements as $elementName => $elementTexts)
-                        {
-                            $element = $elementTable->findByElementSetNameAndElementName($elementSet,$elementName);
-                            $elementID = $element->id;
-                            $Elements[$elementID] = array();
-                            if(is_array($elementTexts))
-                                {
-                                    foreach($elementTexts as $elementText)
-                                        {
-                                            //check for html tags
-                                            if($elementText != strip_tags($elementText)) {
-                                                //element text has html tags
-                                                $html = "1";
-                                            }else {
-                                                //plain text or other non-html object
-                                                $html = "0";
-                                            }
-                                            $Elements[$elementID][] = array(
-                                                'text' => $elementText,
-                                                'html' => $html
-                                            );
-                                        }
-                                }
-                        }
-                }
-            
-            $tags='';
-            if(isset($video['tags']))
-                {
-                    foreach($video['tags'] as $tag)
-                        {
-                            $tags .= $tag['tag'];
-                            $tags .=",";
-                        }
-                    
-                    $tags = substr($tags,0,-2);
-                }
-            
-            $returnPost = array(
-                'Elements'=>$Elements,
-                'item_type_id'=>'3',      //a moving image
-                'tags-to-add'=>$tags,
-                'tags-to-delete'=>'',
-                'collection_id'=>$collection
-            );
-            if($public)
-                $returnPost['public']="1";
-            
-            $pictures = self::fetch("videos/$itemID/pictures");
-            $maxwidth=0;
-            $i=0;
-            $returnFiles = array();
-            if($pictures['total']>0)
-                foreach($pictures['data'] as $picture){
-                    $maxwidth=0;
-                    $i=0;
-                    foreach($picture['sizes'] as $key => $pic)
-                        if($pic['width']>$maxwidth)
-                            $i = $key;
-                    $returnFiles[] = $picture['sizes'][$i]['link'];
-                }
-            $captions = self::Fetch("videos/$itemID/texttracks");
-/*            
-//            Caption text files are not being recognized correctly
-//            by the importer, and are causing thumbnail import to
-//            fail.
-            if($captions['total']>0)
-                foreach($captions['data'] as $caption)
-                    $returnFiles[] = $caption['link'];
-*/
-            return(array(
-                'post' => $returnPost,
-                'files' => $returnFiles
-            ));
+        if(!empty($ownerRole))
+            $maps['Dublin Core'][$ownerRole]=array($video['user']['name'].' ('.$video['user']['link'].')');
+        
+        if (plugin_is_active('DublinCoreExtended'))
+        {
+            $maps["Dublin Core"]["License"]=array($license);
+            $maps["Dublin Core"]["Date Created"]=array($video['created_time']);
         }
+               
+        if(!element_exists(ElementSet::ITEM_TYPE_NAME,'Player'))
+            static::CreatePlayerElement();
+        if(!element_exists(ElementSet::ITEM_TYPE_NAME,'Imported Thumbnail'))
+            static::CreateThumbnailElement();
+        
+        $maps[ElementSet::ITEM_TYPE_NAME]["Player"]=array($video['embed']['html']);
+        
+        if(element_exists(ElementSet::ITEM_TYPE_NAME,'Duration'))
+            $maps[ElementSet::ITEM_TYPE_NAME]["Duration"]=array($video['duration']);
+        
+        $Elements = array();
+        
+        $db = get_db();
+        $elementTable = $db->getTable('Element');
+        
+        foreach ($maps as $elementSet=>$elements)
+        {
+            foreach($elements as $elementName => $elementTexts)
+            {
+                $element = $elementTable->findByElementSetNameAndElementName($elementSet,$elementName);
+                $elementID = $element->id;
+                $Elements[$elementID] = array();
+                if(is_array($elementTexts))
+                {
+                    foreach($elementTexts as $elementText)
+                    {
+                        //check for html tags
+                        if($elementText != strip_tags($elementText)) {
+                            //element text has html tags
+                            $html = "1";
+                        }else {
+                            //plain text or other non-html object
+                            $html = "0";
+                        }
+                        $Elements[$elementID][] = array(
+                            'text' => $elementText,
+                            'html' => $html
+                        );
+                    }
+                }
+            }
+        }
+        
+        $tags='';
+        if(isset($video['tags']))
+        {
+            foreach($video['tags'] as $tag)
+            {
+                $tags .= $tag['tag'];
+                $tags .=",";
+            }
+            
+            $tags = substr($tags,0,-2);
+        }
+        
+        $returnPost = array(
+            'Elements'=>$Elements,
+            'item_type_id'=>'3',      //a moving image
+            'tags-to-add'=>$tags,
+            'tags-to-delete'=>'',
+            'collection_id'=>$collection
+        );
+        if($public)
+            $returnPost['public']="1";
+        
+
+        return(array(
+            'post' => $returnPost,
+            'files' => $returnFiles
+        ));
+        
     }
 }

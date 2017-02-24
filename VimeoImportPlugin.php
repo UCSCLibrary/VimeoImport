@@ -11,31 +11,33 @@
  */
 class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
 {
-  /**
-   * @var array Hooks for the plugin.
-   */
+    /**
+     * @var array Hooks for the plugin.
+     */
     protected $_hooks = array(
         'define_acl',
         'install',
         'admin_head',
+        'public_head',
         'after_save_item',
         'config',
         'config_form',
         'upgrade'
     );
 
-  /**
-   * @var array Filters for the plugin.
-   */
+    /**
+     * @var array Filters for the plugin.
+     */
     protected $_filters = array(
         'admin_navigation_main',
         'filterElement'=>array('Display','Item',"Item Type Metadata","Player"),
-        'display_elements'
+        'display_elements',
+        'exhibit_attachment_markup'
     );
 
-  /**
-   * @var array Options for the plugin.
-   */
+    /**
+     * @var array Options for the plugin.
+     */
     protected $_options = array(
         'vimeo_width'=>640,
         'vimeo_height'=>360,
@@ -44,18 +46,18 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
 
     public function hookAfterSaveItem($args){
         if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player')) {          
-          $item = $args['record'];                                
-          $element = $this->_db->getTable("Element")->findByElementSetNameAndElementName('Item Type Metadata',"Player");
-          if($players = $this->_db->getTable("ElementText")->findBy(array('record_id'=>$item->id,'element_id'=>$element->id))) {
-              if(!is_array($players))
-                  $players = array($players);
-              foreach ($players as $player) {
-                  $player->html = 1;
-                  $player->save();
-              }
-          }
-      }
-  }
+            $item = $args['record'];                                
+            $element = $this->_db->getTable("Element")->findByElementSetNameAndElementName('Item Type Metadata',"Player");
+            if($players = $this->_db->getTable("ElementText")->findBy(array('record_id'=>$item->id,'element_id'=>$element->id))) {
+                if(!is_array($players))
+                    $players = array($players);
+                foreach ($players as $player) {
+                    $player->html = 1;
+                    $player->save();
+                }
+            }
+        }
+    }
 
     public function filterDisplayElements($elementSets){
 
@@ -73,7 +75,7 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
                 foreach ($elements as $key => $element) {
                     if($key==="Player") 
                         $playerElement = $element;
-                     else 
+                    else 
                         $newElements[$key] = $element;
                 }
             }           
@@ -100,53 +102,130 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
         }
     }
 
-  /**
-   *When the plugin installs, create a new metadata element
-   *called Player associated with Moving Pictures
-   *
-   *@return void
-   */
-  public function hookInstall(){
-      $this->_installOptions();
+    /**
+     *When the plugin installs, create a new metadata element
+     *called Player associated with Moving Pictures
+     *
+     *@return void
+     */
+    public function hookInstall(){
+        $this->_installOptions();
 
-      $config = parse_ini_file(dirname(__FILE__)."/vimeo.ini");
-      set_option('vimeo_token',$config['api_token']);
+        $config = parse_ini_file(dirname(__FILE__)."/vimeo.ini");
+        set_option('vimeo_token',$config['api_token']);
 
-      if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player'))
-          return;
+        if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player'))
+            return;
 
-      $db = get_db();
-      $table = $db->getTable('ItemType');
-      $mpType = $table->findByName('Moving Image');
-      if(!is_object($mpType)) {
-          $mpType = new ItemType();
-          $mpType->name = "Moving Image";
-          $mpType->description = "A series of visual representations imparting an impression of motion when shown in succession. Examples include animations, movies, television programs, videos, zoetropes, or visual output from a simulation.";
-      }
-      $mpType->addElements(array(
-          array(
-              'name'=>'Player',
-              'description'=>'html for embedded player to stream video content'
-          )
-      ));
-      $mpType->save();
-  }
+        $db = get_db();
+        $table = $db->getTable('ItemType');
+        $mpType = $table->findByName('Moving Image');
+        if(!is_object($mpType)) {
+            $mpType = new ItemType();
+            $mpType->name = "Moving Image";
+            $mpType->description = "A series of visual representations imparting an impression of motion when shown in succession. Examples include animations, movies, television programs, videos, zoetropes, or visual output from a simulation.";
+        }
+        $mpType->addElements(array(
+            array(
+                'name'=>'Player',
+                'description'=>'html for embedded player to stream video content'
+            )
+        ));
+        $mpType->save();
+    }
 
-  /**
-   *When the plugin loads on the admin side, 
-   *queue the css file
-   *
-   *@return void
-   */
-  public function hookAdminHead(){
-      if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player')){
-          $playerElement = $this->_db->getTable("Element")->findByElementSetNameAndElementName("Item Type Metadata","Player");
-          queue_js_string("var playerElementId = ".$playerElement->id.';');
-          queue_js_file('VimeoImport');
-      }
-      queue_css_file('VimeoImport');
-  }
-  
+    /**
+     *When the plugin loads on the admin side, 
+     *queue the css file
+     *
+     *@return void
+     */
+    public function hookAdminHead(){
+        if(element_exists(ElementSet::ITEM_TYPE_NAME,'Player')){
+            $playerElement = $this->_db->getTable("Element")->findByElementSetNameAndElementName("Item Type Metadata","Player");
+            queue_js_string("var playerElementId = ".$playerElement->id.';');
+            queue_js_file('VimeoImport');
+        }
+        queue_css_file('VimeoImport');
+    }
+
+
+
+    /**
+     *When the plugin loads on the public side, 
+     *queue the css & js files
+     *
+     *@return void
+     */
+    public function hookPublicHead(){
+        queue_js_file('VimeoImport');
+        queue_css_file('VimeoImport');
+    }
+
+
+    /**
+     * Display video widgets instead of thumbnails for youtube objects, 
+     *queue the css & js files
+     *
+     *@return void
+     */    
+    public function filterExhibitAttachmentMarkup($html,$args){
+
+        //do nothing if the iframe is already displayed 
+        // (for example, by the vimeo import plugin)
+        if(strpos($html,'iframe'))
+            return $html;
+
+        // Do not break if the plugin hasn't installed correctly
+        if(!element_exists(ElementSet::ITEM_TYPE_NAME,'Player'))
+            return $html;
+
+        //Retrieve the item being attached
+        $attachment = $args['attachment'];
+        $item = $attachment->getItem();
+
+        // do nothing unless the item has a player element defined
+        if(!$player = metadata($item,array("Item Type Metadata","Player")))
+            return $html;
+        
+        //get the file that would display with the attachment
+        $file = $attachment->getFile();        
+        //get the imported thumbnail filename saved with the item
+        $thumb = metadata($item,array("Item Type Metadata","Imported Thumbnail"));
+        
+        //if the attachment image is not the imported thumbnail,
+        // do nothing (let the thumbnail display as usual)
+        if($file->getProperty('filename') != $thumb && $file->getProperty('original_filename') != $thumb)
+            return $html;
+
+        //otherwise, replace the thumbnail with the player
+        $dom = new DOMDocument;
+        
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);         
+        libxml_clear_errors();    
+        $playerElement = $this->createElementFromHtml($player,$dom);
+        $imgs= $dom->getElementsByTagName('img');
+        foreach($imgs as $i) $img = $i;
+        $video = $img->parentNode->replaceChild($playerElement,$img);
+        $html = $dom->saveHTML();
+        
+        //add a default caption if necessary
+        if (!is_string($attachment['caption']) || $attachment['caption'] == '')
+            $html.='<div class="exhibit-item-caption">'.exhibit_builder_link_to_exhibit_item("<p>See more information about this video</p>",array(),$item).'</div>';
+        
+        return $html;
+    }
+    
+    public function createElementFromHtml($html,$dom) {
+        $tmpDoc = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $tmpDoc->loadHTML($html);
+        libxml_clear_errors();
+        foreach ($tmpDoc->getElementsByTagName('body')->item(0)->childNodes as $node) 
+            return  $dom->importNode($node);
+    }
+    
     public function hookConfig() {
         if(isset($_REQUEST['vimeo_width']))
             set_option('vimeo_width',$_REQUEST['vimeo_width']);
@@ -161,42 +240,42 @@ class VimeoImportPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
 
-  /**
-   * Define the plugin's access control list.
-   *
-   *@param array $args Arguments passed from Zend
-   *@return void
-   */
-  public function hookDefineAcl($args)
-  {
-    $args['acl']->addResource('VimeoImport_Index');
-    $args['acl']->allow('contributor','VimeoImport_Index');
-  }
+    /**
+     * Define the plugin's access control list.
+     *
+     *@param array $args Arguments passed from Zend
+     *@return void
+     */
+    public function hookDefineAcl($args)
+    {
+        $args['acl']->addResource('VimeoImport_Index');
+        $args['acl']->allow('contributor','VimeoImport_Index');
+    }
 
-   
-  /**
-   * Add the Vimeo Import link to the admin main navigation.
-   * 
-   * @param array $nav Navigation array.
-   * @return array $nav Filtered navigation array.
-   */
-  public function filterAdminNavigationMain($nav)
-  {
-    $nav[] = array(
-		   'label' => __('Vimeo Import'),
-		   'uri' => url('vimeo-import'),
-		   'resource' => 'VimeoImport_Index',
-		   'privilege' => 'index'
-		   );
-    return $nav;
-  }
+    
+    /**
+     * Add the Vimeo Import link to the admin main navigation.
+     * 
+     * @param array $nav Navigation array.
+     * @return array $nav Filtered navigation array.
+     */
+    public function filterAdminNavigationMain($nav)
+    {
+        $nav[] = array(
+	    'label' => __('Vimeo Import'),
+	    'uri' => url('vimeo-import'),
+	    'resource' => 'VimeoImport_Index',
+	    'privilege' => 'index'
+	);
+        return $nav;
+    }
 
-  public function filterElement($text,$args) {
-      set_option('vimeo_width',640);
-      set_option('vimeo_height',320);
-      if(strpos($text,'iframe') > 0)
-          $text = substr_replace($text,' width="'.get_option('vimeo_width').'" height="'.get_option('vimeo_height').'" ',7,1);
-      return $text;
-  }      
+    public function filterElement($text,$args) {
+        set_option('vimeo_width',640);
+        set_option('vimeo_height',320);
+        if(strpos($text,'iframe') > 0)
+            $text = substr_replace($text,' width="'.get_option('vimeo_width').'" height="'.get_option('vimeo_height').'" ',7,1);
+        return $text;
+    }      
     
 }

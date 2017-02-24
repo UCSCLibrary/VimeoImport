@@ -8,6 +8,13 @@ jQuery(window).load(function() {
     resizeable: false,
     dialogClass: "vimeo-success-dialog"
   });
+  
+  var vimeoImportedThumb = jQuery("div#moving-image-item-type-metadata-imported-thumbnail div.element-text p").html();
+  jQuery('a img[title="'+vimeoImportedThumb+'"]').hide();
+  var adminImageDiv =   jQuery('a img[title="'+vimeoImportedThumb+'"]').parents("div.admin-thumb.panel");
+  if(vimeoImportedThumb && adminImageDiv.children().length == 1)
+    adminImageDiv.hide();
+
 
   //reset the url input (not sure why the form reset function isn't working)
   jQuery('body.vimeo-import div#content form input#vimeourl').val("");
